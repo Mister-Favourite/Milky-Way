@@ -6,7 +6,7 @@ Created on Mon Jun 21 09:17:22 2021
 """
 
 import os
-os.chdir("F:\\OneDrive - UNT System\\RESEARCH_DOCS\\AI_Project\\StyleTransfer\\Script")
+#os.chdir("F:\\OneDrive - UNT System\\RESEARCH_DOCS\\AI_Project\\StyleTransfer\\Script")
 import tensorflow as tf
 import PIL
 from tqdm import tqdm
@@ -14,10 +14,17 @@ from tqdm import tqdm
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 def load_img(path_to_img):
-    img = tf.io.read_file(path_to_img)
-    img = tf.image.decode_image(img, channels=3)
+    img = cv2.imread(path_to_img)
+    hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_RGB2HSV)
+    hsv_img[:,:,0] = cv2.equalizeHist(hsv_img[:,:,0])
+    img = cv2.cvtColor(hsv_img, cv2.COLOR_HSV2RGB);
+    
+    #img = tf.io.read_file(path_to_img)
+    #img = tf.image.decode_image(img, channels=3)
     img = tf.image.convert_image_dtype(img, tf.float32)
 
     shape = tf.cast(tf.shape(img)[:-1], tf.float32)
@@ -36,6 +43,12 @@ def load_img(path_to_img):
 
     img = tf.image.resize(img, new_shape)
     img = img[tf.newaxis, :]
+    
+    #Atempting a histogram equalization.  Hoping this makes it so that there will be similarity mappings in darker regions
+    #hsv_img = cv2.cvtColor(img.numpy(), cv2.COLOR_RGB2HSV);
+    #hsv_img[:,:,0] = cv2.cvtColor(hsv_img[:,:,0])
+    #img = cv2.cvtColor(hsv_img, cv2.COLOR_HSV2RGB);
+    
     return img,int(long_dim.numpy()),int(short_dim.numpy()),float(scale.numpy()) #int(min(new_shape).numpy())
 
 vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
@@ -70,7 +83,7 @@ def gram_matrix(input_tensor):
 
 #%%
 # Gram matrix on a small window scan that is shifted by x degrees each time
-reference_img,ref_dmax,ref_dmin,scale_ref = load_img('structure2_HI.jpg')
+reference_img,ref_dmax,ref_dmin,scale_ref = load_img('Ophiuchus_HI.jpg')
 milky_way_image,mw_dmax,mw_dmin,scale_mw = load_img('fullskyfin_HI.jpg')
 mw_dmax, mw_dmin = mw_dmax*scale_mw, mw_dmin*scale_mw
 
